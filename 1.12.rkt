@@ -6,8 +6,7 @@
           product
           (iter (* counter product)
                 (+ counter 1))))
-    (iter 1 1))
-  
+    (iter 1 1))  
   ( / ( fact n) (* (fact m) (fact (- n m)))))
 
 
