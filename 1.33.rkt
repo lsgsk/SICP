@@ -38,5 +38,4 @@
   (define (even? x) (= 1 (gcd x n)))
   (filtered-accumulate * 1 identity 1 inc n even?))
 
-
 (product-of-simple 10)
