@@ -12,9 +12,11 @@
                    (max p1 p2 p3 p4))))
 
 (define (div-interval x y)
-  (mul-interval x
-                (make-interval (/ 1.0 (upper-bound y))
-                               (/ 1.0 (lower-bound y)))))
+  (if (<= (* (upper-bound y) (lower-bound y)) 0)
+      (error "Incorrect division" y)
+      (mul-interval x
+                    (make-interval (/ 1.0 (upper-bound y))
+                                   (/ 1.0 (lower-bound y))))))
 
 
-(div-interval (make-interval -5 3) (make-interval 6 8))
+(div-interval (make-interval 5 3) (make-interval -6 8))
