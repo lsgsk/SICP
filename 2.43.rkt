@@ -23,7 +23,10 @@
        (diag-safe? new-position (car positions) (cdr positions))))
 
 (define (adjoin-position new-row k rest-of-queens)
-  (cons new-row rest-of-queens))
+  (begin
+    (display (list k rest-of-queens))
+    (newline)
+    (cons new-row rest-of-queens)))
 
 (define (queens board-size)
   (define (queen-cols k)
@@ -39,7 +42,7 @@
           (enumerate-interval 1 board-size)))))    
   (queen-cols board-size))
 
-(queens 5)
+(queens 4)
 
 
 
