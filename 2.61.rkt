@@ -19,11 +19,14 @@
                (intersection-set set1 (cdr set2)))))))
 
 (define (adjoin-set x set)
-  (cond ((null? set) (cons x '()))
-        ((= x (car set)) set)
-        ((> x (car set)) (cons (car set) (adjoin-set x (cdr set))))
-        ((< x (car set)) (cons x set))
-))
+  (let ((head
+         (cond ((null? set) '())
+               (else (car set)))))
+   (cond ((null? set) (cons x '()))
+         ((= x head) set)
+         ((> x head) (cons head (adjoin-set x (cdr set))))
+         ((< x head) (cons x set)))
+   ))
 
 
 ;;(element-of-set? 8 (list 1 2 5 8 9 10))
