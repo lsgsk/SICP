@@ -124,3 +124,15 @@
 (generate-huffman-tree '())
 (generate-huffman-tree '((C 1)))
 (generate-huffman-tree '((A 4) (B 2) (D 1) (C 1)))
+
+;блять, блять, блять, а вот это решение из ответов
+(define (generate-huffman-tree2 pairs)
+  (define (successive-merge trees) 
+    (if (null? (cdr trees)) 
+        (car trees) 
+        (successive-merge (adjoin-set (make-code-tree (car trees) 
+                                                      (cadr trees)) 
+                                      (cddr trees)))))
+  (successive-merge (make-leaf-set pairs)))
+
+(generate-huffman-tree2 '((A 4) (B 2) (D 1) (C 1)))
