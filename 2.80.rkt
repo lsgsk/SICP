@@ -31,17 +31,19 @@
 (define put (operation-table 'insert-proc!))
 
 (define (attach-tag type-tag contents)
-  (cons type-tag contents))
-
+  (cond  ((eq? type-tag 'scheme-number) contents)
+         ((pair? contents) (cons type-tag contents))
+         (else (error "Некорректные данные -- TYPE-TAG" type-tag))))
+  
 (define (type-tag datum)
-  (if (pair? datum)
-      (car datum)
-      (error "Некорректные помеченные данные -- TYPE-TAG" datum)))
+  (cond ((number? datum) 'scheme-number)
+        ((pair? datum) (car datum))
+        (else (error "Некорректные помеченные данные -- TYPE-TAG" datum))))
 
 (define (contents datum)
-  (if (pair? datum)
-      (cdr datum)
-      (error "Некорректные помеченные данные -- CONTENTS" datum)))
+  (cond ((number? datum) datum)
+        ((pair? datum) (cdr datum))
+        (else (error "Некорректные помеченные данные -- CONTENTS" datum))))
 
 (define (apply-generic op . args)
   (let ((type-tags (map type-tag args)))
@@ -54,6 +56,8 @@
 (define (sub x y) (apply-generic 'sub x y))
 (define (mul x y) (apply-generic 'mul x y))
 (define (div x y) (apply-generic 'div x y))
+(define (equ? x y) (apply-generic 'equ? x y))
+(define (=zero? x) (apply-generic '=zero? x))
 (define (real-part z) (apply-generic 'real-part z))
 (define (imag-part z) (apply-generic 'imag-part z))
 (define (magnitude z) (apply-generic 'magnitude z))
@@ -71,9 +75,13 @@
        (lambda (x y) (tag (* x y))))
   (put 'div '(scheme-number scheme-number)
        (lambda (x y) (tag (/ x y))))
+  (put 'equ? '(scheme-number scheme-number)
+       (lambda (x y) (= x y)))
+  (put '=zero? '(scheme-number)
+       (lambda (x) (= x 0)))
   (put 'make 'scheme-number
        (lambda (x) (tag x)))
-  'done)
+  "number installed")
 
 (define (make-scheme-number n)
   ((get 'make 'scheme-number) n))
@@ -100,6 +108,11 @@
   (define (div-rat x y)
     (make-rat (* (numer x) (denom y))
               (* (denom x) (numer y))))
+  (define (equ?-rat x y)
+    (and (= (numer x) (numer y))
+         (= (denom x) (denom y))))
+  (define (=zero?-rat x)
+    (= (numer x) 0))
   ;; интерфейс к остальной системе
   (define (tag x) (attach-tag 'rational x))
   (put 'add '(rational rational)
@@ -110,9 +123,13 @@
        (lambda (x y) (tag (mul-rat x y))))
   (put 'div '(rational rational)
        (lambda (x y) (tag (div-rat x y))))
+  (put 'equ? '(rational rational)
+       (lambda (x y) (equ?-rat x y)))
+  (put '=zero? '(rational)
+       (lambda (x) (=zero?-rat x)))
   (put 'make 'rational
        (lambda (n d) (tag (make-rat n d))))
-  'done)
+  "rational installed")
 
 (define (make-rational n d)
   ((get 'make 'rational) n d))
@@ -187,6 +204,12 @@
   (define (div-complex z1 z2)
     (make-from-mag-ang  (/ (magnitude z1) (magnitude z2))
                         (- (angle z1) (angle z2))))
+  (define (eq?-complex z1 z2)
+    (and (= (magnitude z1) (magnitude z2))
+         (= (angle z1) (angle z2))))
+  (define (=zero?-complex z1)
+    (and (= (real-part z1) 0)
+         (= (imag-part z1) 0)))
   ; интерфейс к остальной системе
   (define (tag z) (attach-tag 'complex z))
   (put 'real-part '(complex) real-part)
@@ -201,11 +224,15 @@
        (lambda (z1 z2) (tag (mul-complex z1 z2))))
   (put 'div '(complex complex)
        (lambda (z1 z2) (tag (div-complex z1 z2))))
+  (put 'equ? '(complex complex)
+       (lambda (x y) (eq?-complex x y)))
+  (put '=zero? '(complex)
+       (lambda (x) (=zero?-complex x)))
   (put 'make-from-real-imag 'complex
        (lambda (x y) (tag (make-from-real-imag x y))))
   (put 'make-from-mag-ang 'complex
        (lambda (r a) (tag (make-from-mag-ang r a))))
-  'done)
+  "complex installed")
 
 (define (make-complex-from-real-imag x y)
   ((get 'make-from-real-imag 'complex) x y))
@@ -214,9 +241,27 @@
 
 ;=========================================
 
+(install-scheme-number-package)
+(install-rational-package)
 (install-complex-package)
-(define a (make-complex-from-real-imag 3 2))
-(define b (make-complex-from-real-imag 4 8))
-a
-(magnitude a)
-(add a b)
+
+(=zero? 0)
+(=zero? 2)
+(newline)
+
+(define a (make-scheme-number 0))
+(define b (make-scheme-number 4))
+(=zero? a)
+(=zero? b)
+(newline)
+
+(define ar (make-rational 0 2))
+(define br (make-rational 4 2))
+(=zero? ar)
+(=zero? br)
+(newline)
+
+(define ac (make-complex-from-real-imag 0 0))
+(define bc (make-complex-from-real-imag 4 8))
+(=zero? ac)
+(=zero? bc)
