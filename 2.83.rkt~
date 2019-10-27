@@ -48,6 +48,42 @@
         ((pair? datum) (cdr datum))
         (else (error "Некорректные помеченные данные -- CONTENTS" datum))))
 
+;(define (apply-generic op . args)
+;  (let ((type-tags (map type-tag args)))
+;    (let ((proc (get op type-tags)))
+;      (if proc
+;          (apply proc (map contents args))
+;          (error "Нет метода для этих типов -- APPLY-GENERIC" (list op type-tags))))))
+
+(define (apply-generic op . args)
+  (let ((type-tags (map type-tag args)))
+    (let ((proc (get op type-tags)))
+      (display "#" )
+      (display op)
+      (display type-tags)
+      (newline)
+      (if proc
+          (begin
+            (display "%")
+            (display (map contents args))
+            (newline)
+            (apply proc (map contents args)))
+          (begin
+            (display "*")
+            (if (= (length args) 2)
+                (let ((type1 (car type-tags))
+                      (type2 (cadr type-tags))
+                      (a1 (car args))
+                      (a2 (cadr args)))
+                  (if (eq? type1 type2)
+                      (error "->Нет метода для этих типов" (list op type-tags))
+                      (let ((t1->t2 (get-coercion type1 type2))
+                            (t2->t1 (get-coercion type2 type1)))
+                        (cond (t1->t2 (apply-generic op (t1->t2 a1) a2))
+                              (t2->t1 (apply-generic op a1 (t2->t1 a2)))
+                              (else (error "Нет метода для этих типов" (list op type-tags))))))
+                  (error "Нет метода для этих типов" (list op type-tags)))))))))
+
 ;обобщенные процедуры
 (define (add x y) (apply-generic 'add x y))
 (define (sub x y) (apply-generic 'sub x y))
@@ -243,41 +279,12 @@
 (define (install-coercion-package)
   (define (scheme-number->complex n) (make-complex-from-real-imag (contents n) 0))
   (put-coercion 'scheme-number 'complex scheme-number->complex)
+  (define (scheme-number->scheme-number n) n)
+  (put-coercion 'scheme-number 'scheme-number scheme-number->scheme-number)
+  (define (complex->complex z) z)
+  (put-coercion 'complex 'complex complex->complex)
+  
   "coercion installed")
-
-(define (coerce arg type)
-  (if (eq? (type-tag arg) type)
-      arg
-      (let ((arg->type (get-coercion (type-tag arg) type)))
-        (if arg->type
-            (arg->type arg)
-            false))))
-
-(define (coerce-all args type)
-  (if (null? args)
-      '()
-      (let ((first (coerce (car args) type))
-            (rest (coerce-all (cdr args) type)))
-        (if (and first rest)
-            (cons first rest)
-            false))))
-
-(define (apply-with-coercion op args types)
-  (if (null? types)
-      (error "Нет метода для этих типов"
-             (list op types))
-      (let ((type (car types)))
-        (let ((coerced-args (coerce-all args type)))
-          (if coerced-args
-              (apply apply-generic (cons op coerced-args))
-              (apply-with-coercion op args (cdr types)))))))
-
-(define (apply-generic op . args)
-  (let ((type-tags (map type-tag args)))
-    (let ((proc (get op type-tags)))
-      (if proc
-          (apply proc (map contents args))
-          (apply-with-coercion op args type-tags)))))
 
 ;=========================================
 
@@ -285,8 +292,10 @@
 (install-rational-package)
 (install-complex-package)
 (install-coercion-package)
-(newline)
 
 (define a (make-scheme-number 3))
 (define b (make-rational 4 2))
 (define c (make-complex-from-real-imag 4 8))
+
+(exp a a)
+(exp c c)

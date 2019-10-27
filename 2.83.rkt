@@ -1,0 +1,185 @@
+#lang planet neil/sicp
+;таблица хранения типов, украдена из следующих глав
+(define (make-table)
+  (let ((local-table (list '*table*)))
+    (define (lookup key-1 key-2)
+      (let ((subtable (assoc key-1 (cdr local-table))))
+        (if subtable
+            (let ((record (assoc key-2 (cdr subtable))))
+              (if record
+                  (cdr record)
+                  false))
+            false)))
+    (define (insert! key-1 key-2 value)
+      (let ((subtable (assoc key-1 (cdr local-table))))
+        (if subtable
+            (let ((record (assoc key-2 (cdr subtable))))
+              (if record
+                  (set-cdr! record value) (set-cdr! subtable
+                                                    (cons (cons key-2 value) (cdr subtable)))))
+            (set-cdr! local-table (cons (list key-1
+                                              (cons key-2 value)) (cdr local-table)))))
+      'ok)
+    (define (dispatch m)
+      (cond ((eq? m 'lookup-proc) lookup)
+            ((eq? m 'insert-proc!) insert!)
+            (else (error "Неизвестная операция -- TABLE" m))))
+    dispatch))
+
+(define operation-table (make-table))
+(define get (operation-table 'lookup-proc))
+(define put (operation-table 'insert-proc!))
+
+(define get-coercion (operation-table 'lookup-proc))
+(define put-coercion (operation-table 'insert-proc!))
+
+(define (attach-tag type-tag contents)
+  (cons type-tag contents))
+       
+(define (type-tag datum)
+  (cond ((pair? datum) (car datum))
+        (else (error "Некорректные помеченные данные -- TYPE-TAG" datum))))
+
+(define (contents datum)
+  (cond ((pair? datum) (cdr datum))
+        (else (error "Некорректные помеченные данные -- CONTENTS" datum))))
+
+(define (apply-generic op . args)
+  (let ((type-tags (map type-tag args)))
+    (let ((proc (get op type-tags)))
+      (if proc
+          (apply proc (map contents args))     
+          (if (= (length args) 2)
+              (let ((type1 (car type-tags))
+                    (type2 (cadr type-tags))
+                    (a1 (car args))
+                    (a2 (cadr args)))
+                (if (eq? type1 type2)
+                    (error "->Нет метода для этих типов" (list op type-tags))
+                    (let ((t1->t2 (get-coercion type1 type2))
+                          (t2->t1 (get-coercion type2 type1)))
+                      (cond (t1->t2 (apply-generic op (t1->t2 a1) a2))
+                            (t2->t1 (apply-generic op a1 (t2->t1 a2)))
+                            (else (error "Нет метода для этих типов" (list op type-tags))))))
+                (error "Нет метода для этих типов" (list op type-tags))))))))
+
+;обобщенные процедуры
+(define (add x y) (apply-generic 'add x y))
+(define (sub x y) (apply-generic 'sub x y))
+(define (mul x y) (apply-generic 'mul x y))
+(define (div x y) (apply-generic 'div x y))
+
+
+;пакет натуральной арифметики
+(define (install-natural-package)
+  (define (tag x)
+    (attach-tag 'natural x))
+  (define (natural->rational x)
+    (make-rational-number x 1))
+  (put 'add '(natural natural)
+       (lambda (x y) (tag (+ x y))))
+  (put 'sub '(natural natural)
+       (lambda (x y) (tag (- x y))))
+  (put 'mul '(natural natural)
+       (lambda (x y) (tag (* x y))))
+  (put 'div '(natural natural)
+       (lambda (x y) (tag (/ x y))))
+  (put 'rise '(natural)
+       (lambda (x) (natural->rational x)))
+  (put 'make 'natural
+       (lambda (x) (tag x)))
+  "natural installed")
+
+;пакет рациональных чисел
+(define (install-rational-package)
+  ;; внутренние процедуры
+  (define (numer x) (car x))
+  (define (denom x) (cdr x))
+  (define (make-rat n d)
+    (let ((g (gcd n d)))
+      (cons (/ n g) (/ d g))))
+  (define (add-rat x y)
+    (make-rat (+ (* (numer x) (denom y))
+                 (* (numer y) (denom x)))
+              (* (denom x) (denom y))))
+  (define (sub-rat x y)
+    (make-rat (- (* (numer x) (denom y))
+                 (* (numer y) (denom x)))
+              (* (denom x) (denom y))))
+  (define (mul-rat x y)
+    (make-rat (* (numer x) (numer y))
+              (* (denom x) (denom y))))
+  (define (div-rat x y)
+    (make-rat (* (numer x) (denom y))
+              (* (denom x) (numer y))))
+  (define (rational->real x)
+    (make-real-number ( exact->inexact(/ (numer x) (denom x)))))
+  ;; интерфейс к остальной системе
+  (define (tag x) (attach-tag 'rational x))
+  (put 'add '(rational rational)
+       (lambda (x y) (tag (add-rat x y))))
+  (put 'sub '(rational rational)
+       (lambda (x y) (tag (sub-rat x y))))
+  (put 'mul '(rational rational)
+       (lambda (x y) (tag (mul-rat x y))))
+  (put 'div '(rational rational)
+       (lambda (x y) (tag (div-rat x y))))
+  (put 'rise '(rational)
+       (lambda (x) (rational->real x)))
+  (put 'make 'rational
+       (lambda (n d) (tag (make-rat n d))))
+  "rational installed")
+
+;пакет вещественной арифметики
+(define (install-real-package)
+  (define (tag x)
+    (attach-tag 'real x))
+  (put 'add '(real real)
+       (lambda (x y) (tag (+ x y))))
+  (put 'sub '(real real)
+       (lambda (x y) (tag (- x y))))
+  (put 'mul '(real real)
+       (lambda (x y) (tag (* x y))))
+  (put 'div '(real real)
+       (lambda (x y) (tag (/ x y))))
+  (put 'make 'real
+       (lambda (x) (tag x)))
+  "real installed")
+
+
+;модуль преобразования
+;(define (install-coercion-package)
+  ;(define (scheme-number->complex n) (make-complex-from-real-imag (contents n) 0))
+  ;(put-coercion 'scheme-number 'complex scheme-number->complex)
+  ;(define (scheme-number->scheme-number n) n)
+  ;(put-coercion 'scheme-number 'scheme-number scheme-number->scheme-number)
+  ;(define (complex->complex z) z)
+  ;(put-coercion 'complex 'complex complex->complex)
+  
+ ; "coercion installed")
+
+;=========================================
+(define (make-natural-number n) ((get 'make 'natural) (inexact->exact (floor n))))
+(define (make-rational-number n d) ((get 'make 'rational) n d))
+(define (make-real-number n) ((get 'make 'real) n))
+;=========================================
+
+(install-natural-package)
+(install-rational-package)
+(install-real-package)
+
+(newline)
+
+(define a (make-natural-number 3.8))
+(define b (make-rational-number 4 3))
+(define c (make-real-number 3.8))
+
+a
+b
+c
+
+(newline)
+
+(apply-generic 'rise a);
+(apply-generic 'rise b)
+(apply-generic 'rise c)
