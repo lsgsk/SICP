@@ -180,6 +180,6 @@ c
 
 (newline)
 
-(apply-generic 'rise a);
+(apply-generic 'rise a)
 (apply-generic 'rise b)
 (apply-generic 'rise c)
