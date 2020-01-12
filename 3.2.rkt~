@@ -1,0 +1,20 @@
+#lang racket
+
+(define (make-monitored f)
+  (define (count)
+    (let 
+  
+  (define (function-with-count value)
+    (begin
+    (f value)))
+
+  
+  (define (dispatch m)
+    (cond ((eq? m 'how-many-calls?) 4)
+          (else (function-with-count m))))
+  dispatch)
+
+
+(define s (make-monitored sqrt))
+(s 225)
+(s 'how-many-calls?)
