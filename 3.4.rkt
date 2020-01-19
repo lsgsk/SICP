@@ -29,7 +29,6 @@
 
 
 (define acc (make-account 100 "password"))
-
 ((acc "password" 'withdraw) 25)
 ((acc "password" 'withdraw) 125)
 ((acc "incorrect" 'withdraw) 25)
@@ -37,3 +36,4 @@
 ((acc "incorrect" 'withdraw) 25)
 ((acc "incorrect" 'withdraw) 25)
 ((acc "password" 'withdraw) 25)
+((acc "password" 'deposit) 10)
