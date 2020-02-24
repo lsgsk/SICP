@@ -28,6 +28,3 @@
 ;(count-pairs x4)
 
 (display "end")
-
-;(define x1 (cons (cons 1 2) (cons 3 4)))
-;(define x2 (make-cycle (list 'a 'b 'c)))

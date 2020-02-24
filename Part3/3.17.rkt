@@ -1,46 +1,33 @@
-#lang racket
-(require rnrs/base-6)
-(require rnrs/mutable-pairs-6)
+#lang planet neil/sicp
 
-;по-моему я сделать что-то сложное и не то 
-
-(define (make-cycle x)
-  (define (last-pair x)
-    (if (null? (cdr x))
-        x
-        (last-pair (cdr x))))
-  (set-cdr! (last-pair x) x)
-  x)
-
-(define count-pairs
-  (let ((listened (cons null null)))
-    (define (add-to-end list value)
-      (if (pair? (cdr list))
-          (add-to-end (cdr list) value)
-          (set-cdr! list (cons value '()))))
-    (define (contains? list value)
-      (if (null? list)
-          false
-          (if (eq? value (car list))
-              true
-              (contains? (cdr list) value))))
-    (define (count x)
-      (if (not (pair? x))
+(define (count-pairs x)
+  (let ((encountered '()))
+    (define (helper x)
+      (if (or (not (pair? x)) (memq x encountered))
           0
-          (if (contains? listened x)
-              0
-              (begin
-                (add-to-end listened x)  
-                (+ (count (car x))
-                   (count (cdr x))
-                   1))))
-      )
-    count))
-    
+          (begin
+            (set! encountered (cons x encountered))
+            (+ (helper (car x))
+               (helper (cdr x))
+               1))))
+    (helper x)))
 
 
-(define x1 (cons (cons 1 2) (cons 3 4)))
-(define x2 (make-cycle (list 'a 'b 'c)))
-
+(define x1 '(1 2 3))
 (count-pairs x1)
+
+(define a '(1))
+(define b (cons a a))
+(define x2 (list b))
 (count-pairs x2)
+
+(define q '(1))
+(define w (cons q q))
+(define x3 (cons w w))
+(count-pairs x3)
+
+(define x4 '(1 2 3))
+(set-cdr! (cddr x4) x4)
+(count-pairs x4)
+
+(display "end")

@@ -1,0 +1,62 @@
+#lang planet neil/sicp
+
+(define (make-queue)
+  (let ((front-ptr '())
+        (rear-ptr '()))
+    (define (set-front-ptr! item)
+      (set! front-ptr item))
+    (define (set-rear-ptr! item)
+      (set! rear-ptr item))
+    (define (empty-queue?)
+      (null? front-ptr))
+    (define (front-queue)
+      (if (empty-queue?)
+          (error "FRONT вызвана с пустой очередью")
+          (car front-ptr)))
+
+    (define (insert-queue! item)
+      (let ((new-pair (cons item '())))
+        (cond ((empty-queue?)
+               (set-front-ptr! new-pair)
+               (set-rear-ptr! new-pair))
+              (else
+               (set-cdr! rear-ptr new-pair)
+               (set-rear-ptr! new-pair)))))
+    (define (delete-queue!)
+      (cond ((empty-queue?)
+             (error "DELETE! вызвана с пустой очередью"))
+            (else
+             (set-front-ptr! (cdr front-ptr)))))
+    (define (print-queue)
+      (define (print head)
+        (cond ((pair? head)
+               (display (car head))
+               (display " ")
+               (print (cdr head)))
+              (else
+               (display "\n"))))
+      (if (empty-queue?)
+          (display "Queue is empty\n")
+          (begin 
+            (display "Queue: ")
+            (print front-ptr ))))
+  
+    (define (dispatch m)
+      (cond ((eq? m 'empty-queue?) (empty-queue?))
+            ((eq? m 'front-queue) (front-queue))
+            ((eq? m 'insert-queue!) (lambda (x) (insert-queue! x)))             
+            ((eq? m 'delete-queue!) (delete-queue!))
+            ((eq? m 'print-queue) (print-queue))
+            (else (error "Неизвестная процедура"))))
+    dispatch))
+
+
+
+(define q1 (make-queue))
+(q1 'empty-queue?)
+((q1 'insert-queue!) 'a)
+((q1 'insert-queue!) 'b)
+(q1 'print-queue)
+(q1 'delete-queue!)
+(q1 'empty-queue?)
+(q1 'print-queue)
